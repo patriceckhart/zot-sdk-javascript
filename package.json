@@ -35,6 +35,14 @@
     "agent"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/patriceckhart/zot-sdk-javascript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/patriceckhart/zot-sdk-javascript/issues"
+  },
+  "homepage": "https://github.com/patriceckhart/zot-sdk-javascript#readme",
   "engines": {
     "node": ">=18"
   },
