@@ -1,8 +1,8 @@
 # @zot/sdk-javascript
 
-TypeScript SDK for embedding `zot rpc` in Node.js, Bun, pnpm, Yarn, npm, and server-side Next.js apps.
+TypeScript SDK for embedding `zot rpc` in Node.js apps and server-side framework routes, including Next.js, Nuxt, Remix, SvelteKit, Express, Fastify, and Bun servers.
 
-The SDK starts a long-lived `zot rpc` child process and talks newline-delimited JSON over stdin/stdout. It is intended for server runtimes. Do not import it in browser components.
+The SDK starts a long-lived `zot rpc` child process and talks newline-delimited JSON over stdin/stdout. It is intended for Node-compatible server runtimes. Do not import it in browser components or edge runtimes.
 
 ## Install
 
@@ -55,9 +55,13 @@ console.log(result.text);
 zot.close();
 ```
 
-## Next.js route handler example
+## Framework usage
 
-`zot rpc` is stateful, so keep one client per chat session on the server. This minimal example streams text deltas as Server-Sent Events.
+`zot rpc` is stateful, so keep one client per chat session on the server. The SDK works in any Node-compatible server framework that can spawn child processes. It does not work in browser code or edge runtimes.
+
+### Next.js route handler example
+
+This minimal example streams text deltas as Server-Sent Events.
 
 ```ts
 // app/api/chat/route.ts
@@ -113,6 +117,25 @@ export async function POST(req: Request) {
 }
 ```
 
+### Nuxt server route example
+
+```ts
+// server/api/chat.post.ts
+import { ZotClient } from "@zot/sdk-javascript";
+
+const zot = new ZotClient({
+  provider: process.env.ZOT_PROVIDER ?? "anthropic",
+  model: process.env.ZOT_MODEL,
+  cwd: process.cwd(),
+});
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody<{ message: string }>(event);
+  const result = await zot.prompt(body.message);
+  return { text: result.text };
+});
+```
+
 ## API
 
 ```ts
@@ -146,6 +169,7 @@ Use normal zot auth. Run `zot` and `/login`, or pass provider API keys via envir
 ## Notes
 
 - One `ZotClient` wraps one `zot rpc` process, cwd, model, and session.
+- Use it only in Node-compatible server runtimes with child process support.
 - Only one prompt or compact operation should be active per client.
 - For multiple projects or concurrent chats, create multiple clients.
 - The process exits when closed or when stdin closes.
