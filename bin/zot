@@ -13,7 +13,7 @@ const binary = await resolveBinary();
 const child = spawn(binary, process.argv.slice(2), { stdio: "inherit" });
 child.on("error", (error) => {
   console.error(`zot not found: ${error.message}`);
-  console.error("Install zot from https://www.zot.sh or reinstall @zot/sdk-javascript.");
+  console.error("Install zot from https://www.zot.sh or reinstall @patriceckhart/zot-sdk-javascript.");
   process.exit(127);
 });
 child.on("exit", (code, signal) => {

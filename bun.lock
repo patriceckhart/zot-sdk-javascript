@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@zot/sdk-javascript",
+      "name": "@patriceckhart/zot-sdk-javascript",
       "devDependencies": {
         "@types/node": "^22.15.30",
         "typescript": "^5.8.3",

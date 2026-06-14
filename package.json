@@ -1,5 +1,5 @@
 {
-  "name": "@zot/sdk-javascript",
+  "name": "@patriceckhart/zot-sdk-javascript",
   "version": "0.1.0",
   "description": "TypeScript SDK for embedding zot RPC in Node.js applications.",
   "type": "module",

@@ -1,4 +1,4 @@
-# @zot/sdk-javascript
+# @patriceckhart/zot-sdk-javascript
 
 TypeScript SDK for embedding `zot rpc` in Node.js applications.
 
@@ -7,13 +7,13 @@ The SDK starts a long-lived `zot rpc` child process and talks newline-delimited 
 ## Install
 
 ```bash
-npm install @zot/sdk-javascript
+npm install @patriceckhart/zot-sdk-javascript
 # or
-pnpm add @zot/sdk-javascript
+pnpm add @patriceckhart/zot-sdk-javascript
 # or
-yarn add @zot/sdk-javascript
+yarn add @patriceckhart/zot-sdk-javascript
 # or
-bun add @zot/sdk-javascript
+bun add @patriceckhart/zot-sdk-javascript
 ```
 
 During install, `postinstall` detects your OS and CPU. If `zot` is already on `PATH`, it uses that. Otherwise it downloads the matching release asset from GitHub, verifies `checksums.txt`, and stores the binary under the package `vendor/` directory.
@@ -28,7 +28,7 @@ Environment controls:
 ## Node.js usage
 
 ```ts
-import { ZotClient } from "@zot/sdk-javascript";
+import { ZotClient } from "@patriceckhart/zot-sdk-javascript";
 
 const zot = new ZotClient({
   provider: "anthropic",
@@ -47,7 +47,7 @@ zot.close();
 One-shot prompt:
 
 ```ts
-import { createZotClient } from "@zot/sdk-javascript";
+import { createZotClient } from "@patriceckhart/zot-sdk-javascript";
 
 const zot = await createZotClient({ provider: "openai", cwd: process.cwd() });
 const result = await zot.prompt("Write a tiny README for this app");
@@ -65,7 +65,7 @@ This minimal example streams text deltas as Server-Sent Events.
 
 ```ts
 // app/api/chat/route.ts
-import { ZotClient } from "@zot/sdk-javascript";
+import { ZotClient } from "@patriceckhart/zot-sdk-javascript";
 
 export const runtime = "nodejs";
 
@@ -121,7 +121,7 @@ export async function POST(req: Request) {
 
 ```ts
 // server/api/chat.post.ts
-import { ZotClient } from "@zot/sdk-javascript";
+import { ZotClient } from "@patriceckhart/zot-sdk-javascript";
 
 const zot = new ZotClient({
   provider: process.env.ZOT_PROVIDER ?? "anthropic",
