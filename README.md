@@ -16,7 +16,17 @@ yarn add @patriceckhart/zot-sdk-javascript
 bun add @patriceckhart/zot-sdk-javascript
 ```
 
-During install, `postinstall` detects your OS and CPU. If `zot` is already on `PATH`, it uses that. Otherwise it downloads the matching release asset from GitHub, verifies `checksums.txt`, and stores the binary under the package `vendor/` directory.
+During install, `postinstall` detects your OS and CPU. If `zot` is already on `PATH`, it uses that. Otherwise it downloads the matching release asset from GitHub, verifies `checksums.txt`, and stores the binary under the package `vendor/` directory. Platform binaries are not committed to this package.
+
+### Bun
+
+Bun may block dependency lifecycle scripts and print `Blocked 1 postinstall`. If that happens, either trust the package with Bun or run the installer manually after `bun add`:
+
+```bash
+node node_modules/@patriceckhart/zot-sdk-javascript/scripts/install-zot.js
+```
+
+If `zot` is already installed on your PATH, no download is needed.
 
 Environment controls:
 

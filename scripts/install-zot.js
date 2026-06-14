@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { access, chmod, copyFile, mkdir, readFile, rm } from "node:fs/promises";
+import { access, chmod, copyFile, mkdir, readFile, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, delimiter, dirname, join, resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
@@ -19,6 +19,7 @@ const binDir = join(packageRoot, "bin");
 const isWindows = process.platform === "win32";
 const vendorBinary = join(vendorDir, isWindows ? "zot.exe" : "zot");
 const binShim = join(binDir, "zot");
+const packageBinDir = resolve(binDir);
 
 main().catch((error) => {
   console.warn(`[zot-sdk] zot binary install skipped: ${error.message}`);
@@ -138,12 +139,17 @@ async function writeShim(_target) {
 
 async function commandExists(command) {
   const extensions = isWindows ? (process.env.PATHEXT || ".EXE;.CMD;.BAT").split(";") : [""];
+  const shimRealPath = await realpath(binShim).catch(() => undefined);
+
   for (const dir of (process.env.PATH || "").split(delimiter)) {
     if (!dir) continue;
     for (const ext of extensions) {
       const candidate = join(dir, isWindows ? `${command}${ext.toLowerCase()}` : command);
       try {
         await access(candidate);
+        const candidateRealPath = await realpath(candidate).catch(() => candidate);
+        if (shimRealPath && candidateRealPath === shimRealPath) continue;
+        if (candidateRealPath.startsWith(`${packageBinDir}/`) || candidateRealPath.startsWith(`${packageBinDir}\\`)) continue;
         return true;
       } catch {
         // keep searching

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { access } from "node:fs/promises";
+import { access, realpath } from "node:fs/promises";
 import { dirname, join, resolve, delimiter } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -8,12 +8,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, "..");
 const isWindows = process.platform === "win32";
 const vendorBinary = join(packageRoot, "vendor", isWindows ? "zot.exe" : "zot");
+const currentScript = await realpath(fileURLToPath(import.meta.url)).catch(() => fileURLToPath(import.meta.url));
 
 const binary = await resolveBinary();
+if (!binary) {
+  console.error("zot binary not found.");
+  console.error("Install zot from https://www.zot.sh, set ZOT_BINARY, or run the SDK install script manually.");
+  process.exit(127);
+}
+
 const child = spawn(binary, process.argv.slice(2), { stdio: "inherit" });
 child.on("error", (error) => {
-  console.error(`zot not found: ${error.message}`);
-  console.error("Install zot from https://www.zot.sh or reinstall @patriceckhart/zot-sdk-javascript.");
+  console.error(`zot failed to start: ${error.message}`);
+  console.error("Install zot from https://www.zot.sh, set ZOT_BINARY, or run the SDK install script manually.");
   process.exit(127);
 });
 child.on("exit", (code, signal) => {
@@ -24,9 +31,7 @@ child.on("exit", (code, signal) => {
 async function resolveBinary() {
   if (process.env.ZOT_BINARY) return process.env.ZOT_BINARY;
   if (await exists(vendorBinary)) return vendorBinary;
-  const pathBinary = await findOnPath("zot");
-  if (pathBinary) return pathBinary;
-  return "zot";
+  return findOnPath("zot");
 }
 
 async function exists(path) {
@@ -45,7 +50,13 @@ async function findOnPath(command) {
     if (!dir || resolve(dir) === ownBin) continue;
     for (const ext of extensions) {
       const candidate = join(dir, isWindows ? `${command}${ext.toLowerCase()}` : command);
-      if (await exists(candidate)) return candidate;
+      if (!(await exists(candidate))) continue;
+
+      const resolved = await realpath(candidate).catch(() => candidate);
+      if (resolved === currentScript) continue;
+      if (resolved.startsWith(`${ownBin}/`) || resolved.startsWith(`${ownBin}\\`)) continue;
+
+      return candidate;
     }
   }
   return undefined;
