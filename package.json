@@ -1,7 +1,7 @@
 {
   "name": "@zot/sdk-javascript",
   "version": "0.1.0",
-  "description": "TypeScript SDK for embedding zot RPC in Node.js and Next.js applications.",
+  "description": "TypeScript SDK for embedding zot RPC in Node.js applications.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

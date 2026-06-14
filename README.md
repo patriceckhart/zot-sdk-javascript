@@ -1,6 +1,6 @@
 # @zot/sdk-javascript
 
-TypeScript SDK for embedding `zot rpc` in Node.js apps and server-side framework routes, including Next.js, Nuxt, Remix, SvelteKit, Express, Fastify, and Bun servers.
+TypeScript SDK for embedding `zot rpc` in Node.js applications.
 
 The SDK starts a long-lived `zot rpc` child process and talks newline-delimited JSON over stdin/stdout. It is intended for Node-compatible server runtimes. Do not import it in browser components or edge runtimes.
 
