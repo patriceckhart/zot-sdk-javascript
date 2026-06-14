@@ -71,7 +71,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          current_version="$(node -p "require('./package.json').version")"
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+          npm_version="$(npm view "$package_name" version 2>/dev/null || true)"
+          tag_version="$(git tag --list 'v*' --sort=-v:refname | head -n 1 | sed 's/^v//' || true)"
+          current_version="$(node - "$package_version" "$npm_version" "$tag_version" <<'NODE'
+          const versions = process.argv.slice(2).filter(Boolean);
+          const parse = (version) => {
+            const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+            return match ? match.slice(1).map(Number) : undefined;
+          };
+          const compare = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+          const parsed = versions.map((version) => [version, parse(version)]).filter(([, parts]) => parts);
+          parsed.sort((a, b) => compare(a[1], b[1]));
+          console.log(parsed.at(-1)?.[0] ?? '0.0.0');
+          NODE
+          )"
           requested_version="${{ inputs.version || '' }}"
           bump="${{ inputs.bump || 'next' }}"
 
@@ -137,11 +152,8 @@ jobs:
       - name: Pack dry run
         run: npm pack --dry-run
 
-      - name: Commit and tag
-        run: |
-          git add package.json bun.lock
-          git commit -m "release v${{ steps.version.outputs.version }}"
-          git tag "${{ steps.version.outputs.tag }}"
+      - name: Create git tag
+        run: git tag "${{ steps.version.outputs.tag }}"
 
       - name: Publish to npm
         run: npm publish --access public --tag "${{ inputs.npm_tag || 'latest' }}" --provenance
@@ -149,10 +161,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           ZOT_SKIP_INSTALL: "1"
 
-      - name: Push release commit and tag
-        run: |
-          git push origin HEAD:${{ github.ref_name }}
-          git push origin "${{ steps.version.outputs.tag }}"
+      - name: Push release tag
+        run: git push origin "${{ steps.version.outputs.tag }}"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
