@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+import { access } from "node:fs/promises";
+import { dirname, join, resolve, delimiter } from "node:path";
+import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const packageRoot = resolve(__dirname, "..");
+const isWindows = process.platform === "win32";
+const vendorBinary = join(packageRoot, "vendor", isWindows ? "zot.exe" : "zot");
+
+const binary = await resolveBinary();
+const child = spawn(binary, process.argv.slice(2), { stdio: "inherit" });
+child.on("error", (error) => {
+  console.error(`zot not found: ${error.message}`);
+  console.error("Install zot from https://www.zot.sh or reinstall @zot/sdk-javascript.");
+  process.exit(127);
+});
+child.on("exit", (code, signal) => {
+  if (signal) process.kill(process.pid, signal);
+  else process.exit(code ?? 0);
+});
+
+async function resolveBinary() {
+  if (process.env.ZOT_BINARY) return process.env.ZOT_BINARY;
+  if (await exists(vendorBinary)) return vendorBinary;
+  const pathBinary = await findOnPath("zot");
+  if (pathBinary) return pathBinary;
+  return "zot";
+}
+
+async function exists(path) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function findOnPath(command) {
+  const extensions = isWindows ? (process.env.PATHEXT || ".EXE;.CMD;.BAT").split(";") : [""];
+  const ownBin = resolve(__dirname);
+  for (const dir of (process.env.PATH || "").split(delimiter)) {
+    if (!dir || resolve(dir) === ownBin) continue;
+    for (const ext of extensions) {
+      const candidate = join(dir, isWindows ? `${command}${ext.toLowerCase()}` : command);
+      if (await exists(candidate)) return candidate;
+    }
+  }
+  return undefined;
+}

@@ -1,0 +1,158 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact semver version to release, for example 0.0.1, 0.0.99, 0.1.0"
+        required: false
+        type: string
+      bump:
+        description: "Version bump to apply when version is omitted. next rolls 0.0.99 to 0.1.0"
+        required: true
+        default: "next"
+        type: choice
+        options:
+          - next
+          - patch
+          - minor
+          - major
+      npm_tag:
+        description: "npm dist-tag"
+        required: true
+        default: "latest"
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Release package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          scope: "@zot"
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        env:
+          ZOT_SKIP_INSTALL: "1"
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current_version="$(node -p "require('./package.json').version")"
+          requested_version="${{ inputs.version }}"
+          bump="${{ inputs.bump }}"
+
+          if [ -n "$requested_version" ]; then
+            next_version="$requested_version"
+          else
+            IFS='.' read -r major minor patch <<< "$current_version"
+            case "$bump" in
+              next)
+                if [ "$patch" -ge 99 ]; then
+                  minor=$((minor + 1))
+                  patch=0
+                else
+                  patch=$((patch + 1))
+                fi
+                ;;
+              patch)
+                patch=$((patch + 1))
+                ;;
+              minor)
+                minor=$((minor + 1))
+                patch=0
+                ;;
+              major)
+                major=$((major + 1))
+                minor=0
+                patch=0
+                ;;
+              *)
+                echo "Unknown bump: $bump" >&2
+                exit 1
+                ;;
+            esac
+            next_version="$major.$minor.$patch"
+          fi
+
+          if ! node -e "const v=process.argv[1]; if(!/^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$/.test(v)) process.exit(1)" "$next_version"; then
+            echo "Invalid semver version: $next_version" >&2
+            exit 1
+          fi
+
+          if git rev-parse "v$next_version" >/dev/null 2>&1; then
+            echo "Tag already exists: v$next_version" >&2
+            exit 1
+          fi
+
+          echo "version=$next_version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$next_version" >> "$GITHUB_OUTPUT"
+
+      - name: Update package version
+        run: |
+          npm version "${{ steps.version.outputs.version }}" --no-git-tag-version
+          bun install --lockfile-only
+        env:
+          ZOT_SKIP_INSTALL: "1"
+
+      - name: Build
+        run: bun run build
+
+      - name: Typecheck
+        run: bun run check
+
+      - name: Pack dry run
+        run: npm pack --dry-run
+
+      - name: Commit and tag
+        run: |
+          git add package.json bun.lock
+          git commit -m "release v${{ steps.version.outputs.version }}"
+          git tag "${{ steps.version.outputs.tag }}"
+
+      - name: Publish to npm
+        run: npm publish --access public --tag "${{ inputs.npm_tag }}" --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          ZOT_SKIP_INSTALL: "1"
+
+      - name: Push release commit and tag
+        run: |
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true

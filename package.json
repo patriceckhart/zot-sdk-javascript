@@ -1,0 +1,45 @@
+{
+  "name": "@zot/sdk-javascript",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for embedding zot RPC in Node.js and Next.js applications.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "zot": "./bin/zot"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "scripts",
+    "vendor",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "postinstall": "node ./scripts/install-zot.js"
+  },
+  "keywords": [
+    "zot",
+    "rpc",
+    "sdk",
+    "ai",
+    "agent"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3"
+  }
+}
