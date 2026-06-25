@@ -14,6 +14,8 @@ import type {
 } from "./types.js";
 import { ZotRpcError } from "./types.js";
 
+const subscriptionProviders = new Set(["anthropic", "openai-codex", "kimi", "github-copilot"]);
+
 type Pending = {
   command: string;
   resolve: (response: ZotResponse) => void;
@@ -157,6 +159,8 @@ export class ZotClient extends EventEmitter {
   }
 
   private buildArgs(): string[] {
+    this.validateAuthOptions();
+
     const args = ["rpc"];
     const push = (flag: string, value?: string | number | boolean): void => {
       if (value === undefined || value === false) return;
@@ -167,7 +171,7 @@ export class ZotClient extends EventEmitter {
     push("--provider", this.options.provider);
     push("--model", this.options.model);
     push("--cwd", this.options.cwd);
-    push("--api-key", this.options.apiKey);
+    if (this.options.auth !== "subscription") push("--api-key", this.options.apiKey);
     push("--base-url", this.options.baseUrl);
     push("--system-prompt", this.options.systemPrompt);
     const appended = Array.isArray(this.options.appendSystemPrompt)
@@ -182,6 +186,27 @@ export class ZotClient extends EventEmitter {
     if (this.options.tools?.length) push("--tools", this.options.tools.join(","));
 
     return args;
+  }
+
+  private validateAuthOptions(): void {
+    if (this.options.auth === "apiKey" && !this.options.apiKey) {
+      throw new ZotRpcError("ZotClient auth:'apiKey' requires apiKey");
+    }
+
+    if (this.options.auth !== "subscription") return;
+
+    const provider = this.options.provider;
+    if (!provider) {
+      throw new ZotRpcError("ZotClient auth:'subscription' requires provider");
+    }
+    if (!subscriptionProviders.has(provider)) {
+      throw new ZotRpcError(
+        `ZotClient auth:'subscription' supports anthropic, openai-codex, kimi, and github-copilot, not ${provider}`,
+      );
+    }
+    if (this.options.apiKey) {
+      throw new ZotRpcError("ZotClient auth:'subscription' cannot be combined with apiKey");
+    }
   }
 
   private async request<T = unknown>(payload: CommandPayload): Promise<T> {

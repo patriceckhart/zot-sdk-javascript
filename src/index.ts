@@ -4,6 +4,7 @@ export type {
   HelloData,
   PromptOptions,
   PromptResult,
+  ZotAuthMode,
   ZotClientOptions,
   ZotContentBlock,
   ZotEvent,
@@ -15,5 +16,6 @@ export type {
   ZotResponse,
   ZotState,
   ZotStopReason,
+  ZotSubscriptionProvider,
   ZotUsage,
 } from "./types.js";

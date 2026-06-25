@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { EventEmitter } from "node:events";
 import { ZotRpcError } from "./types.js";
+const subscriptionProviders = new Set(["anthropic", "openai-codex", "kimi", "github-copilot"]);
 export class ZotClient extends EventEmitter {
     options;
     child;
@@ -118,6 +119,7 @@ export class ZotClient extends EventEmitter {
         }
     }
     buildArgs() {
+        this.validateAuthOptions();
         const args = ["rpc"];
         const push = (flag, value) => {
             if (value === undefined || value === false)
@@ -129,7 +131,8 @@ export class ZotClient extends EventEmitter {
         push("--provider", this.options.provider);
         push("--model", this.options.model);
         push("--cwd", this.options.cwd);
-        push("--api-key", this.options.apiKey);
+        if (this.options.auth !== "subscription")
+            push("--api-key", this.options.apiKey);
         push("--base-url", this.options.baseUrl);
         push("--system-prompt", this.options.systemPrompt);
         const appended = Array.isArray(this.options.appendSystemPrompt)
@@ -145,6 +148,23 @@ export class ZotClient extends EventEmitter {
         if (this.options.tools?.length)
             push("--tools", this.options.tools.join(","));
         return args;
+    }
+    validateAuthOptions() {
+        if (this.options.auth === "apiKey" && !this.options.apiKey) {
+            throw new ZotRpcError("ZotClient auth:'apiKey' requires apiKey");
+        }
+        if (this.options.auth !== "subscription")
+            return;
+        const provider = this.options.provider;
+        if (!provider) {
+            throw new ZotRpcError("ZotClient auth:'subscription' requires provider");
+        }
+        if (!subscriptionProviders.has(provider)) {
+            throw new ZotRpcError(`ZotClient auth:'subscription' supports anthropic, openai-codex, kimi, and github-copilot, not ${provider}`);
+        }
+        if (this.options.apiKey) {
+            throw new ZotRpcError("ZotClient auth:'subscription' cannot be combined with apiKey");
+        }
     }
     async request(payload) {
         await this.start();

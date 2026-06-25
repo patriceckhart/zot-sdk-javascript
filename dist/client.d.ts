@@ -30,6 +30,7 @@ export declare class ZotClient extends EventEmitter {
     close(): void;
     private startInner;
     private buildArgs;
+    private validateAuthOptions;
     private request;
     private requestRaw;
     private handleLine;

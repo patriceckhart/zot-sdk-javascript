@@ -15,6 +15,10 @@ export type ZotProvider =
 
 export type ZotReasoning = "off" | "minimum" | "low" | "medium" | "high" | "maximum";
 
+export type ZotAuthMode = "auto" | "apiKey" | "subscription";
+
+export type ZotSubscriptionProvider = "anthropic" | "openai-codex" | "kimi" | "github-copilot";
+
 export interface ZotClientOptions {
   /** Path to the zot binary. Defaults to ZOT_BINARY or "zot". */
   binary?: string;
@@ -23,6 +27,14 @@ export interface ZotClientOptions {
   cwd?: string;
   apiKey?: string;
   baseUrl?: string;
+  /**
+   * Credential source preference.
+   *
+   * - auto: let zot resolve credentials normally from --api-key, env vars, and auth.json.
+   * - apiKey: require apiKey to be provided and pass it to zot.
+   * - subscription: require a subscription-capable provider and let zot use stored OAuth credentials from auth.json.
+   */
+  auth?: ZotAuthMode;
   systemPrompt?: string;
   appendSystemPrompt?: string | string[];
   reasoning?: ZotReasoning;

@@ -169,12 +169,27 @@ Important options:
 
 - `binary`: path to `zot`. Defaults to `ZOT_BINARY` or `zot`.
 - `provider`, `model`, `cwd`, `apiKey`, `baseUrl` map to `zot rpc` flags.
+- `auth`: credential source preference, `auto` (default), `apiKey`, or `subscription`.
 - `systemPrompt`, `appendSystemPrompt`, `reasoning`, `maxSteps`, `noTools`, `tools` map to `zot rpc` flags.
 - `rpcToken`: sends the initial `hello` token when `ZOTCORE_RPC_TOKEN` is set on the child process.
 
 ## Auth
 
-Use normal zot auth. Run `zot` and `/login`, or pass provider API keys via environment variables such as `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `KIMI_API_KEY`, and others supported by zot.
+By default, the SDK uses normal zot auth. Run `zot` and `/login`, or pass provider API keys via environment variables such as `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `KIMI_API_KEY`, and others supported by zot.
+
+To require API-key auth from SDK configuration, pass `auth: "apiKey"` with `apiKey`.
+
+To require stored subscription credentials, first run `zot` and `/login`, choose subscription, then create the client with `auth: "subscription"` and a subscription-capable provider:
+
+```ts
+const zot = new ZotClient({
+  provider: "openai-codex",
+  auth: "subscription",
+  cwd: process.cwd(),
+});
+```
+
+Subscription auth is available for the same providers supported by zot itself: `anthropic`, `openai-codex`, `kimi`, and `github-copilot`. DeepSeek and Google do not have subscription login paths.
 
 ## Notes
 
